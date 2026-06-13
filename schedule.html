@@ -1,106 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Tournament Schedule</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tournament Schedule</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    font-family: "Inter", Arial, sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    padding: 0;
+  }
 
-  <style>
-    body {
-      font-family: "Inter", Arial, sans-serif;
-      background: #f0f2f5;
-      margin: 0;
-      padding: 0;
-    }
+  header {
+    background: #2563eb;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+  }
 
-    header {
-      background: #2563eb;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      font-size: 24px;
-      font-weight: 700;
-    }
+  #container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 0 16px;
+  }
 
-    #container {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 0 16px;
-    }
+  .player-row {
+    background: white;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: 0.2s;
+  }
 
-    .player-card {
-      background: white;
-      padding: 16px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    }
+  .player-row:hover {
+    background: #f3f4f6;
+  }
 
-    .player-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+  .player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-    .player-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: #111827;
-    }
+  .player-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+  }
 
-    .stats {
-      font-size: 14px;
-      color: #6b7280;
-    }
+  .stats {
+    font-size: 14px;
+    color: #6b7280;
+  }
 
-    .match {
-      background: #f9fafb;
-      padding: 12px;
-      border-radius: 10px;
-      margin-top: 12px;
-      border-left: 4px solid #2563eb;
-    }
+  .matches {
+    margin-top: 12px;
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+  }
 
-    .stage {
-      font-size: 14px;
-      font-weight: 700;
-      color: #2563eb;
-      margin-bottom: 6px;
-    }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-    .teams {
-      font-size: 15px;
-      font-weight: 600;
-      color: #111827;
-    }
+  .match {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 12px;
+    border-left: 4px solid #2563eb;
+  }
 
-    .status {
-      margin-top: 6px;
-      font-size: 13px;
-      font-weight: 700;
-      padding: 4px 8px;
-      border-radius: 6px;
-      display: inline-block;
-    }
+  .stage {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2563eb;
+    margin-bottom: 6px;
+  }
 
-    .completed {
-      background: #dcfce7;
-      color: #166534;
-    }
+  .teams {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+  }
 
-    .upcoming {
-      background: #fef3c7;
-      color: #92400e;
-    }
+  .status {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+  }
 
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: #6b7280;
-      font-size: 13px;
-    }
-  </style>
+  .completed {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .upcoming {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    color: #6b7280;
+    font-size: 13px;
+  }
+</style>
 </head>
 
 <body>
@@ -111,18 +127,30 @@
   <p id="loading">Loading schedule...</p>
 </div>
 
-<footer>
-  Auto-refreshes every 20 seconds
-</footer>
+<footer>Auto-refreshes every 20 seconds</footer>
 
 <script>
-  const API_BASE = "https://benchmarkapi.onrender.com"; // <-- replace this
+  const API_BASE = "YOUR_API_BASE_URL"; // <-- replace this
   const urlParams = new URLSearchParams(window.location.search);
   const tournamentId = urlParams.get("tournamentId");
 
   if (!tournamentId) {
     document.getElementById("loading").innerText = "Missing tournamentId in URL";
     throw new Error("Missing tournamentId");
+  }
+
+  function displayStage(stage) {
+    if (!stage) return "Unknown";
+    const s = stage.toUpperCase();
+    switch (s) {
+      case "GROUP": return "Group Stage";
+      case "PRE_QF": return "Pre‑Quarter Final";
+      case "QF": return "Quarter Final";
+      case "SF": return "Semi Final";
+      case "LOSERS_FINAL": return "Losers Final";
+      case "FINAL": return "Final";
+      default: return stage;
+    }
   }
 
   async function loadSchedule() {
@@ -132,34 +160,36 @@
 
       const container = document.getElementById("container");
       container.innerHTML = "";
-      
+      document.getElementById("loading").style.display = "none";
+
       data.players.forEach(player => {
-        const card = document.createElement("div");
-        card.className = "player-card";
+        const row = document.createElement("div");
+        row.className = "player-row";
 
         const total = player.matches.length;
         const completed = player.matches.filter(m => m.scores).length;
         const upcoming = total - completed;
 
-        card.innerHTML = `
+        row.innerHTML = `
           <div class="player-header">
             <div class="player-name">${player.teamName}</div>
-            <div class="stats">
-              Total: ${total} • Completed: ${completed} • Upcoming: ${upcoming}
-            </div>
+            <div class="stats">T: ${total} • W: ${completed} • L: ${total - completed}</div>
           </div>
+          <div class="matches"></div>
         `;
+
+        const matchesDiv = row.querySelector(".matches");
 
         player.matches.forEach(match => {
           const status = match.scores ? "Completed" : "Upcoming";
           const statusClass = match.scores ? "completed" : "upcoming";
 
-          card.innerHTML += `
+          matchesDiv.innerHTML += `
             <div class="match">
-              <div class="stage">${match.stage}</div>
+              <div class="stage">${displayStage(match.stage)}</div>
               <div class="teams">
-                ${match.team1.player1_name} & ${match.team1.player2_name} 
-                vs 
+                ${match.team1.player1_name} & ${match.team1.player2_name}
+                vs
                 ${match.team2.player1_name} & ${match.team2.player2_name}
               </div>
               <div class="status ${statusClass}">${status}</div>
@@ -167,7 +197,12 @@
           `;
         });
 
-        container.appendChild(card);
+        row.addEventListener("click", () => {
+          matchesDiv.style.display =
+            matchesDiv.style.display === "block" ? "none" : "block";
+        });
+
+        container.appendChild(row);
       });
 
     } catch (err) {
@@ -177,8 +212,6 @@
   }
 
   loadSchedule();
-
-  // Auto-refresh every 20 seconds
   setInterval(loadSchedule, 20000);
 </script>
 
