@@ -403,6 +403,24 @@
         return { total, won, lost, toPlay };
       }
 
+      function normalizeStage(stage) {
+        if (!stage) return "zzz";
+
+        const s = stage
+          .toString()
+          .toLowerCase()
+          .replace(/[\s_-]/g, "");
+
+        if (s.includes("group")) return "GROUP";
+        if (s.includes("pre") && s.includes("qf")) return "PRE_QF";
+        if (s === "qf" || s.includes("quarter")) return "QF";
+        if (s === "sf" || s.includes("semi")) return "SF";
+        if (s.includes("loser")) return "LOSERS_FINAL";
+        if (s.includes("final")) return "FINAL";
+
+        return "zzz"; // unknown → bottom
+      }
+
       function sortMatchesByStage(matches) {
         const order = {
           GROUP: 1,
@@ -412,10 +430,13 @@
           LOSERS_FINAL: 5,
           FINAL: 6,
         };
+
         return [...matches].sort((a, b) => {
-          const sa = order[a.stage] || 99;
-          const sb = order[b.stage] || 99;
+          const sa = order[normalizeStage(a.stage)] || 99;
+          const sb = order[normalizeStage(b.stage)] || 99;
+
           if (sa !== sb) return sa - sb;
+
           return (a.match_number ?? 0) - (b.match_number ?? 0);
         });
       }
