@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter",
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Inter",
           sans-serif;
         margin: 0;
         background: #e5e7eb;
@@ -238,7 +242,6 @@
       }
     </style>
   </head>
-
   <body>
     <header
       style="
@@ -257,7 +260,6 @@
         alt="App Logo"
         style="height: 90px; width: auto; object-fit: contain"
       />
-
       <div
         style="
           margin-top: 4px;
@@ -295,9 +297,7 @@
       let searchText = "";
       let searchSelectedPlayerId = null;
 
-      // -----------------------------
-      // FIXED WINNER LOGIC (WORKS FOR BO3)
-      // -----------------------------
+      // WINNER LOGIC (SINGLE + BO3)
       function getWinnerLoser(item) {
         const scores = item.scores;
         if (!scores) return { winner: null, loser: null };
@@ -305,16 +305,13 @@
         const s0 = scores["0"];
         const s1 = scores["1"];
 
-        // SINGLE SET
+        // SINGLE GAME
         if (typeof s0 !== "object" && typeof s1 !== "object") {
           const t1 = Number(s0);
           const t2 = Number(s1);
-
           if (isNaN(t1) || isNaN(t2)) return { winner: null, loser: null };
-
           if (t1 > t2) return { winner: "team1", loser: "team2" };
           if (t2 > t1) return { winner: "team2", loser: "team1" };
-
           return { winner: null, loser: null };
         }
 
@@ -328,7 +325,6 @@
 
           const a = Number(set["0"]);
           const b = Number(set["1"]);
-
           if (isNaN(a) || isNaN(b)) return;
 
           if (a > b) team1Sets++;
@@ -337,13 +333,9 @@
 
         if (team1Sets > team2Sets) return { winner: "team1", loser: "team2" };
         if (team2Sets > team1Sets) return { winner: "team2", loser: "team1" };
-
         return { winner: null, loser: null };
       }
 
-      // -----------------------------
-      // OTHER HELPERS
-      // -----------------------------
       function formatTeamName(team) {
         if (!team) return "-";
         const p1 = team.player1_name || "";
@@ -401,10 +393,10 @@
           const t2 = Number(s1);
           if (m.player_side === "team1") {
             if (t1 > t2) won++;
-            else lost++;
-          } else {
+            else if (t2 > t1) lost++;
+          } else if (m.player_side === "team2") {
             if (t2 > t1) won++;
-            else lost++;
+            else if (t1 > t2) lost++;
           }
         });
 
@@ -428,9 +420,6 @@
         });
       }
 
-      // -----------------------------
-      // MATCH CARD
-      // -----------------------------
       function renderMatchItem(match) {
         const { label } = getMatchResult(match);
         const { winner, loser } = getWinnerLoser(match);
@@ -537,9 +526,6 @@
         return card;
       }
 
-      // -----------------------------
-      // RENDER
-      // -----------------------------
       function render() {
         const content = document.getElementById("content");
         content.innerHTML = "";
@@ -550,9 +536,6 @@
           ? "Show Player View"
           : "Show All Players";
 
-        // -----------------------------
-        // FULL LIST MODE
-        // -----------------------------
         if (showFullList) {
           const title = document.createElement("div");
           title.className = "section-title";
@@ -565,4 +548,231 @@
             <div>Player</div>
             <div class="stats-compact-row">
               <div class="stat-header-compact">T</div>
-              <div class="stat-header
+              <div class="stat-header-compact">W</div>
+              <div class="stat-header-compact">L</div>
+            </div>
+          `;
+          content.appendChild(headerRow);
+
+          allPlayers.forEach((p) => {
+            const sortedMatches = sortMatchesByStage(p.matches);
+            const stats = computeStats(sortedMatches);
+            const isSelected = selectedFullListPlayerId === p.teamId;
+
+            const wrapper = document.createElement("div");
+            wrapper.style.marginBottom = "4px";
+
+            const row = document.createElement("div");
+            row.className = "player-row-compact";
+
+            row.innerHTML = `
+              <div style="display:flex;align-items:center;flex:1;">
+                <div class="player-name-compact ${
+                  isSelected ? "player-text-active" : ""
+                }">
+                  ${p.teamName}
+                </div>
+                ${
+                  p.tier
+                    ? `<div class="tier-badge ${
+                        p.tier === "gold" ? "tier-gold" : "tier-silver"
+                      }">${p.tier}</div>`
+                    : ""
+                }
+              </div>
+              <div class="stats-compact-row">
+                <div class="stat-compact">${stats.total}</div>
+                <div class="stat-compact stat-won-compact">${stats.won}</div>
+                <div class="stat-compact stat-lost-compact">${stats.lost}</div>
+              </div>
+            `;
+
+            row.addEventListener("click", () => {
+              selectedFullListPlayerId = isSelected ? null : p.teamId;
+              render();
+            });
+
+            wrapper.appendChild(row);
+
+            if (isSelected) {
+              const statsCard = document.createElement("div");
+              statsCard.className = "stats-card";
+              statsCard.innerHTML = `
+                <div class="stat-item">
+                  <div class="stat-label">Total</div>
+                  <div class="stat-value">${stats.total}</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Won</div>
+                  <div class="stat-value stat-won">${stats.won}</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Lost</div>
+                  <div class="stat-value stat-lost">${stats.lost}</div>
+                </div>
+              `;
+              wrapper.appendChild(statsCard);
+
+              sortedMatches.forEach((m) =>
+                wrapper.appendChild(renderMatchItem(m)),
+              );
+            }
+
+            content.appendChild(wrapper);
+          });
+
+          return;
+        }
+
+        // SEARCH MODE
+        const title = document.createElement("div");
+        title.className = "section-title";
+        title.textContent = "Search Player";
+        content.appendChild(title);
+
+        const searchBox = document.createElement("div");
+        searchBox.className = "search-box";
+
+        const input = document.createElement("input");
+        input.className = "search-input";
+        input.placeholder = "Type player name...";
+        input.value = searchText;
+
+        input.addEventListener("input", (e) => {
+          searchText = e.target.value;
+          searchSelectedPlayerId = null;
+          updateSearchResults();
+        });
+
+        searchBox.appendChild(input);
+        content.appendChild(searchBox);
+
+        const resultsContainer = document.createElement("div");
+        resultsContainer.id = "resultsContainer";
+        content.appendChild(resultsContainer);
+
+        updateSearchResults();
+      }
+
+      function updateSearchResults() {
+        const results = document.getElementById("resultsContainer");
+        if (!results) return;
+        results.innerHTML = "";
+
+        const filtered = allPlayers.filter((p) =>
+          (p.teamName || "")
+            .toLowerCase()
+            .startsWith((searchText || "").toLowerCase()),
+        );
+
+        if (searchText.length > 0 && filtered.length === 0) {
+          results.innerHTML =
+            '<div style="color:#6b7280;margin-top:10px;">No players found</div>';
+          return;
+        }
+
+        filtered.forEach((p) => {
+          const sortedMatches = sortMatchesByStage(p.matches);
+          const stats = computeStats(sortedMatches);
+          const isSelected = searchSelectedPlayerId === p.teamId;
+
+          const wrapper = document.createElement("div");
+          wrapper.style.marginBottom = "6px";
+
+          const row = document.createElement("div");
+          row.className = "player-row-compact";
+
+          row.innerHTML = `
+            <div style="display:flex;align-items:center;flex:1;">
+              <div class="player-name-compact ${
+                isSelected ? "player-text-active" : ""
+              }">
+                ${p.teamName}
+              </div>
+              ${
+                p.tier
+                  ? `<div class="tier-badge ${
+                      p.tier === "gold" ? "tier-gold" : "tier-silver"
+                    }">${p.tier}</div>`
+                  : ""
+              }
+            </div>
+            <div class="stats-compact-row">
+              <div class="stat-compact">${stats.total}</div>
+              <div class="stat-compact stat-won-compact">${stats.won}</div>
+              <div class="stat-compact stat-lost-compact">${stats.lost}</div>
+            </div>
+          `;
+
+          row.addEventListener("click", () => {
+            searchSelectedPlayerId = isSelected ? null : p.teamId;
+            updateSearchResults();
+          });
+
+          wrapper.appendChild(row);
+
+          if (isSelected) {
+            const statsCard = document.createElement("div");
+            statsCard.className = "stats-card";
+            statsCard.innerHTML = `
+              <div class="stat-item">
+                <div class="stat-label">Total</div>
+                <div class="stat-value">${stats.total}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Won</div>
+                <div class="stat-value stat-won">${stats.won}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Lost</div>
+                <div class="stat-value stat-lost">${stats.lost}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">To Play</div>
+                <div class="stat-value stat-upcoming">${stats.toPlay}</div>
+              </div>
+            `;
+            wrapper.appendChild(statsCard);
+
+            sortedMatches.forEach((m) =>
+              wrapper.appendChild(renderMatchItem(m)),
+            );
+          }
+
+          results.appendChild(wrapper);
+        });
+      }
+
+      async function loadPlayers() {
+        if (!tournamentId) {
+          document.getElementById("content").textContent =
+            "Missing tournamentId in URL";
+          return;
+        }
+        try {
+          const res = await fetch(
+            `${API_BASE}/tournament/${tournamentId}/players-with-matches`,
+          );
+          const data = await res.json();
+          allPlayers = data.players || [];
+          render();
+        } catch (e) {
+          console.error(e);
+          document.getElementById("content").textContent =
+            "Failed to load data";
+        }
+      }
+
+      document.getElementById("toggleViewBtn").addEventListener("click", () => {
+        showFullList = !showFullList;
+        selectedFullListPlayerId = null;
+        searchText = "";
+        searchSelectedPlayerId = null;
+        render();
+      });
+
+      loadPlayers();
+      setInterval(loadPlayers, 20000);
+    </script>
+  </body>
+</html>
