@@ -649,10 +649,7 @@
       // -----------------------------
       function updateSearchResults() {
         const results = document.getElementById("resultsContainer");
-        const details = document.getElementById("detailsContainer");
-
         results.innerHTML = "";
-        details.innerHTML = "";
 
         const filtered = allPlayers.filter((p) =>
           p.teamName.toLowerCase().startsWith(searchText.toLowerCase()),
@@ -664,69 +661,58 @@
         }
 
         filtered.forEach((p) => {
+          const wrapper = document.createElement("div");
+          wrapper.style.marginBottom = "6px";
+
           const item = document.createElement("div");
           item.className = "player-item";
 
           item.innerHTML = `
-        <div class="player-text ${
-          searchSelectedPlayerId === p.teamId ? "player-text-active" : ""
-        }">${p.teamName}</div>
-      `;
+      <div class="player-text ${
+        searchSelectedPlayerId === p.teamId ? "player-text-active" : ""
+      }">${p.teamName}</div>
+    `;
 
           item.addEventListener("click", () => {
-            searchSelectedPlayerId = p.teamId;
+            searchSelectedPlayerId =
+              searchSelectedPlayerId === p.teamId ? null : p.teamId;
             updateSearchResults();
           });
 
-          results.appendChild(item);
+          wrapper.appendChild(item);
+
+          // If this player is selected → render details INSIDE wrapper
+          if (searchSelectedPlayerId === p.teamId) {
+            const stats = computeStats(p.matches);
+            const sorted = sortMatchesByStage(p.matches);
+
+            const statsCard = document.createElement("div");
+            statsCard.className = "stats-card";
+            statsCard.innerHTML = `
+        <div class="stat-item">
+          <div class="stat-label">Total</div>
+          <div class="stat-value">${stats.total}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Won</div>
+          <div class="stat-value stat-won">${stats.won}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Lost</div>
+          <div class="stat-value stat-lost">${stats.lost}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">To Play</div>
+          <div class="stat-value stat-upcoming">${stats.toPlay}</div>
+        </div>
+      `;
+            wrapper.appendChild(statsCard);
+
+            sorted.forEach((m) => wrapper.appendChild(renderMatchItem(m)));
+          }
+
+          results.appendChild(wrapper);
         });
-
-        const selected = allPlayers.find(
-          (p) => p.teamId === searchSelectedPlayerId,
-        );
-        if (!selected) return;
-
-        const stats = computeStats(selected.matches);
-        const sorted = sortMatchesByStage(selected.matches);
-
-        const header = document.createElement("div");
-        header.style.display = "flex";
-        header.style.alignItems = "center";
-        header.innerHTML = `
-      <div class="section-title">${selected.teamName}</div>
-      ${
-        selected.tier
-          ? `<div class="tier-badge ${
-              selected.tier === "gold" ? "tier-gold" : "tier-silver"
-            }" style="margin-left:10px;">${selected.tier}</div>`
-          : ""
-      }
-    `;
-        details.appendChild(header);
-
-        const statsCard = document.createElement("div");
-        statsCard.className = "stats-card";
-        statsCard.innerHTML = `
-      <div class="stat-item">
-        <div class="stat-label">Total</div>
-        <div class="stat-value">${stats.total}</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">Won</div>
-        <div class="stat-value stat-won">${stats.won}</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">Lost</div>
-        <div class="stat-value stat-lost">${stats.lost}</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">To Play</div>
-        <div class="stat-value stat-upcoming">${stats.toPlay}</div>
-      </div>
-    `;
-        details.appendChild(statsCard);
-
-        sorted.forEach((m) => details.appendChild(renderMatchItem(m)));
       }
 
       // -----------------------------
