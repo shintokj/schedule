@@ -661,31 +661,47 @@
         }
 
         filtered.forEach((p) => {
+          const sortedMatches = sortMatchesByStage(p.matches);
+          const stats = computeStats(sortedMatches);
+          const isSelected = searchSelectedPlayerId === p.teamId;
+
+          // WRAPPER (same as All Players)
           const wrapper = document.createElement("div");
           wrapper.style.marginBottom = "6px";
 
-          const item = document.createElement("div");
-          item.className = "player-item";
+          // PLAYER ROW (same style as All Players)
+          const row = document.createElement("div");
+          row.className = "player-row-compact";
 
-          item.innerHTML = `
-      <div class="player-text ${
-        searchSelectedPlayerId === p.teamId ? "player-text-active" : ""
-      }">${p.teamName}</div>
+          row.innerHTML = `
+      <div style="display:flex;align-items:center;flex:1;">
+        <div class="player-name-compact ${isSelected ? "player-text-active" : ""}">
+          ${p.teamName}
+        </div>
+        ${
+          p.tier
+            ? `<div class="tier-badge ${
+                p.tier === "gold" ? "tier-gold" : "tier-silver"
+              }">${p.tier}</div>`
+            : ""
+        }
+      </div>
+      <div class="stats-compact-row">
+        <div class="stat-compact">${stats.total}</div>
+        <div class="stat-compact stat-won-compact">${stats.won}</div>
+        <div class="stat-compact stat-lost-compact">${stats.lost}</div>
+      </div>
     `;
 
-          item.addEventListener("click", () => {
-            searchSelectedPlayerId =
-              searchSelectedPlayerId === p.teamId ? null : p.teamId;
+          row.addEventListener("click", () => {
+            searchSelectedPlayerId = isSelected ? null : p.teamId;
             updateSearchResults();
           });
 
-          wrapper.appendChild(item);
+          wrapper.appendChild(row);
 
-          // If this player is selected → render details INSIDE wrapper
-          if (searchSelectedPlayerId === p.teamId) {
-            const stats = computeStats(p.matches);
-            const sorted = sortMatchesByStage(p.matches);
-
+          // EXPANDED CONTENT (same as All Players)
+          if (isSelected) {
             const statsCard = document.createElement("div");
             statsCard.className = "stats-card";
             statsCard.innerHTML = `
@@ -708,7 +724,9 @@
       `;
             wrapper.appendChild(statsCard);
 
-            sorted.forEach((m) => wrapper.appendChild(renderMatchItem(m)));
+            sortedMatches.forEach((m) =>
+              wrapper.appendChild(renderMatchItem(m)),
+            );
           }
 
           results.appendChild(wrapper);
